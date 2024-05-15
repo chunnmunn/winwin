@@ -1,0 +1,53 @@
+import streamlit as st
+import pickle
+import pandas as pd
+
+teams=['Sunrisers Hyderabad', 'Mumbai Indians', 'Royal Challengers Bangalore', 
+       'Kolkata Knight Riders', 'Kings XI Punjab', 'Chennai Super Kings', 
+       'Rajasthan Royals', 'Delhi Capitals']
+
+cities=['Hyderabad', 'Bangalore', 'Mumbai', 'Indore', 'Kolkata', 'Delhi', 
+        'Chandigarh', 'Jaipur', 'Chennai', 'Cape Town', 'Port Elizabeth', 
+        'Durban', 'Centurion', 'East London', 'Johannesburg', 'Kimberley', 
+        'Bloemfontein', 'Ahmedabad', 'Cuttack', 'Nagpur', 'Dharamsala', 
+        'Visakhapatnam', 'Pune', 'Raipur', 'Ranchi', 'Abu Dhabi', 
+        'Sharjah', 'nan', 'Mohali', 'Bengaluru']
+
+pipe = pickle.load(open('pipe.pkl','rb'))
+st.title('IPL Win Chance Calculator')
+
+col1,col2 = st.columns(2)
+with col1:
+    bat_team = st.selectbox('Select batting side', sorted(teams))
+with col2:
+    bowl_team = st.selectbox('Select bowling side', sorted(teams))
+
+selected_city = st.selectbox('Choose host city', sorted(cities))
+
+target = st.number_input("Target runs")
+
+col3,col4,col5 = st.columns(3)
+
+with col3:
+    score = st.number_input("Current score")
+with col4:
+    overs = st.number_input("Overs played")
+with col5:
+    wickets = st.number_input("Wickets lost")
+
+if st.button('Predict'):
+    runs_left = target - score
+    balls_left = 120 - (overs * 6)
+    wickets = 10 - wickets
+    crr = score / overs
+    rrr = (runs_left * 6) / balls_left
+
+    input_df = pd.DataFrame({'batting_team': [bat_team], 'bowling_team': [bowl_team], 'city': [selected_city],
+                             'runs_left': [runs_left], 'balls_left': [balls_left], 'wickets': [wickets],
+                             'crr': [crr], 'rrr': [rrr]})
+    result = pipe.predict_proba(input_df)
+    win_chance = round(result[0][1] * 100)
+    loss_chance = round(result[0][0] * 100)
+    
+    st.header(f"{bat_team} - {win_chance}%")
+    st.header(f"{bowl_team} - {loss_chance}%")
